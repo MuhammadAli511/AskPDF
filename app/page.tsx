@@ -70,7 +70,7 @@ export default function Home() {
                             documents.map((doc: { filename: string, id: string }, index: number) => (
                                 <div key={index} className="mb-4 bg-[#f8f5ee] w-[70%]">
                                     <div className='flex items-center justify-between mx-8'>
-                                        <div className="block p-4 hover:bg-gray-200 rounded">
+                                        <div className="block p-4 rounded">
                                             <p className="text-gray-800 font-bold">{doc.filename}</p>
                                         </div>
                                         <Link href={`/documents/${doc.id}`}>
