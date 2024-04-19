@@ -9,24 +9,28 @@ export default function DocumentPage() {
   const [messages, setMessages] = useState<Array<{ id: number; text: string; sender: 'user' | 'system', loading?: boolean }>>([]);
   const [inputValue, setInputValue] = useState('');
 
+  type Message = {
+    id: number;
+    text: string;
+    sender: 'user' | 'system';
+    loading?: boolean;
+  }
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
 
-    // Add the user message
-    const newMessage = { id: messages.length + 1, text: inputValue, sender: 'user' };
+    const newMessage: Message = { id: messages.length + 1, text: inputValue, sender: 'user' };
     setMessages([...messages, newMessage]);
 
-    // Indicate loading for the system message
-    const loadingMessage = { id: messages.length + 2, text: '', sender: 'system', loading: true };
+    const loadingMessage: Message = { id: messages.length + 2, text: '', sender: 'system', loading: true };
     setMessages(prev => [...prev, loadingMessage]);
     setInputValue('');
 
-    // Simulate API call
     const response = await sendMessage(inputValue, docId);
 
-    // Update the messages, replace the loading message with the actual system message
     setMessages(prev => prev.map(m => (m.loading ? { ...m, text: response.response, loading: false } : m)));
   };
+
 
   return (
     <div className="flex flex-col mx-2 md:mx-20 lg:mx-60">
