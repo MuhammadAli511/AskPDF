@@ -4,16 +4,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getDocuments, uploadDocument } from '@/pages/api/documents';
+import Loader from '@/components/Loader';
 
 export default function Home() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [documents, setDocuments] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
+    const [uploadLoading, setUploadLoading] = useState(false);
 
     useEffect(() => {
         const fetchDocuments = async () => {
+            setDocumentsLoading(true);
             const docs = await getDocuments();
             setDocuments(docs);
+            setDocumentsLoading(false);
         };
 
         fetchDocuments();
@@ -32,6 +37,10 @@ export default function Home() {
     };
 
     const handleUploadSubmit = async () => {
+        setUploadLoading(true);
+        if (uploadLoading) {
+            return;
+        }
         if (!selectedFile) {
             alert('No file selected');
             return;
@@ -39,15 +48,15 @@ export default function Home() {
 
         const response = await uploadDocument(selectedFile);
 
-
-        if (response.ok) {
+        if (response.message === "Document uploaded successfully") {
             alert('Document uploaded successfully');
+            setUploadLoading(false);
             setIsModalOpen(false);
-            setSelectedFile(null);
-            const updatedDocuments = await response.json();
-            setDocuments(updatedDocuments);
+            window.location.reload();
         } else {
             alert('Upload failed');
+            setUploadLoading(false);
+            setIsModalOpen(false);
         }
     };
 
@@ -55,27 +64,34 @@ export default function Home() {
         <div className="min-h-screen mx-72 mt-10">
             <h1 className="text-3xl font-bold mb-8">Documents</h1>
             <div className="flex flex-col items-center justify-center mt-5">
-                {documents.length > 0 ? (
-                    documents.map((doc: { filename: string, id: string }, index: number) => (
-                        <div key={index} className="mb-4 bg-[#f8f5ee] w-[70%]">
-                            <div className='flex items-center justify-between mx-8'>
-                                <div className="block p-4 hover:bg-gray-200 rounded">
-                                    <p className="text-gray-800 font-bold">{doc.filename}</p>
+                {!documentsLoading ? (
+                    <div className='w-full flex flex-col items-center justify-center'>
+                        {documents.length > 0 ? (
+                            documents.map((doc: { filename: string, id: string }, index: number) => (
+                                <div key={index} className="mb-4 bg-[#f8f5ee] w-[70%]">
+                                    <div className='flex items-center justify-between mx-8'>
+                                        <div className="block p-4 hover:bg-gray-200 rounded">
+                                            <p className="text-gray-800 font-bold">{doc.filename}</p>
+                                        </div>
+                                        <Link href={`/documents/${doc.id}`}>
+                                            <div className="text-[#ff612f] hover:underline">Chat</div>
+                                        </Link>
+                                    </div>
+                                    <div className="border-b border-gray-200"></div>
                                 </div>
-                                <Link href={`/documents/${doc.id}`}>
-                                    <div className="text-[#ff612f] hover:underline">Chat</div>
-                                </Link>
+                            ))
+                        ) : (
+                            <div>
+                                <Image src="/pdf.svg" alt="PDF icon" width={40} height={40} />
+                                <p className="text-gray-800 mt-4 font-bold">No PDF documents</p>
+                                <p className="text-gray-800 mb-8">Get started by uploading a new document.</p>
                             </div>
-                            <div className="border-b border-gray-200"></div>
-                        </div>
-                    ))
-                ) : (
-                    <div>
-                        <Image src="/pdf.svg" alt="PDF icon" width={40} height={40} />
-                        <p className="text-gray-800 mt-4 font-bold">No PDF documents</p>
-                        <p className="text-gray-800 mb-8">Get started by uploading a new document.</p>
+                        )}
                     </div>
+                ) : (
+                    <Loader />
                 )}
+
                 <button
                     onClick={handleUploadClick}
                     className="px-6 py-2 bg-[#ff612f] text-white rounded shadow-lg hover:bg-[#d45b36] focus:outline-none"
@@ -112,7 +128,7 @@ export default function Home() {
                                     className="px-4 py-2 bg-[#ff612f] text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-[#d45b36]"
                                     onClick={handleUploadSubmit}
                                 >
-                                    Upload
+                                    {uploadLoading ? 'Uploading...' : 'Upload'}
                                 </button>
                             </div>
                             <div className="items-center px-4 py-3">
