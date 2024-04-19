@@ -2,18 +2,20 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { sendMessage } from '@/pages/api/documents';
+import { sendMessage, chatHistory } from '@/pages/api/documents';
 
 export default function DocumentPage() {
   const docId = usePathname()?.split('/')?.pop() ?? '';
-  const [messages, setMessages] = useState<Array<{ id: number; text: string; sender: 'user' | 'system', loading?: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: number; text: string; sender: 'user' | 'system', loading?: boolean, feedback?: 'positive' | 'negative' }>>([]);
   const [inputValue, setInputValue] = useState('');
+  const [userQuestion, setUserQuestion] = useState('');
 
   type Message = {
     id: number;
     text: string;
     sender: 'user' | 'system';
     loading?: boolean;
+    feedback?: 'positive' | 'negative';
   }
 
   const handleSendMessage = async () => {
@@ -24,19 +26,33 @@ export default function DocumentPage() {
 
     const loadingMessage: Message = { id: messages.length + 2, text: '', sender: 'system', loading: true };
     setMessages(prev => [...prev, loadingMessage]);
-    setInputValue('');
 
     const response = await sendMessage(inputValue, docId);
+    setUserQuestion(inputValue);
 
     setMessages(prev => prev.map(m => (m.loading ? { ...m, text: response.response, loading: false } : m)));
+
+    setInputValue('');
   };
 
+  const handleFeedback = async (id: number, feedback: string) => {
+    const updatedMessages = messages.map((message) => {
+      if (message.id === id) {
+        if (message.feedback !== feedback) {
+          chatHistory(userQuestion, message.text, feedback, docId);
+        }
+        return { ...message, feedback: feedback as 'positive' | 'negative' | undefined };
+      }
+      return message;
+    });
+    setMessages(updatedMessages);
+  };
 
   return (
     <div className="flex flex-col mx-2 md:mx-20 lg:mx-60">
       <div className="flex-1 p-4 space-y-4">
         {messages.map((message) => (
-          <div key={message.id} className={`max-w-xs md:max-w-md lg:max-w-2xl ${message.sender === 'user' ? 'ml-auto bg-blue-200' : 'mr-auto bg-gray-200'} rounded px-4 py-2 flex items-center`}>
+          <div key={message.id} className={`max-w-xs md:max-w-md lg:max-w-2xl ${message.sender === 'user' ? 'ml-auto bg-blue-200' : 'mr-auto bg-gray-200'} rounded px-4 py-2 flex items-center justify-between`}>
             {message.loading ? (
               <div className="loader-dots block relative w-20 h-5 mt-2">
                 <div className="absolute top-0 mt-1 w-3 h-3 rounded-full bg-black"></div>
@@ -45,7 +61,21 @@ export default function DocumentPage() {
                 <div className="absolute top-0 mt-1 w-3 h-3 rounded-full bg-black"></div>
               </div>
             ) : (
-              <span>{message.text}</span>
+              <>
+                <span>{message.text}</span>
+                {message.sender === 'system' && (
+                  <div>
+                    <button
+                      onClick={() => handleFeedback(message.id, 'positive')}
+                      className={`p-2 ${message.feedback === 'positive' ? 'bg-green-600' : 'text-green-600'}`}
+                    >👍</button>
+                    <button
+                      onClick={() => handleFeedback(message.id, 'negative')}
+                      className={`p-2 ${message.feedback === 'negative' ? 'bg-red-600' : 'text-red-600'}`}
+                    >👎</button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

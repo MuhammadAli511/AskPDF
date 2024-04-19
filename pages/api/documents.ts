@@ -28,3 +28,15 @@ export const sendMessage = async (message: string, document_id: string) => {
 
   return await response.json();
 }
+
+export const chatHistory = async (question: string, answer: string, feedback: string, document_id: string) => {
+  const response = await fetch(`${API_URL}/chatHistory`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ question, answer, feedback, document_id }),
+  });
+
+  return await response.json();
+}
